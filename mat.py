@@ -13,7 +13,7 @@ def mat(Q_list,dta_i,j ,P_list, O, death_states,censored_state ,corresponding_ce
 
     no_states = np.shape(Q)[1]
 
-    x = O[j+1]
+    x = int(O[j+1])
 
     if x in death_states:
         Q_death = np.zeros([no_states,no_states])

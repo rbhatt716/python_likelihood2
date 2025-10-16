@@ -10,11 +10,8 @@ def Q_matrix(p,no_qpars,Qm,covariates_name,j,dt,functions,age_like):
     
     all_qpars = np.array( [p[ind] for ind in indexes])
     
-    q_pars_mat = all_qpars.reshape(len(covariates_name)+1,  np.sum(Qm>0) )
-    
-    
-    
-    if(covariates_name != None  ):
+
+    if len(covariates_name)>0:
         q_pars_mat = all_qpars.reshape(len(covariates_name)+1,  np.sum(Qm>0) )
 
         cov_vals=np.array(dt[covariates_name].iloc[j])
