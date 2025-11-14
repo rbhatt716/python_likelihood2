@@ -8,8 +8,8 @@ Created on Thu Jul  4 18:11:34 2024
 import numpy as np
 
 def mat(Q_list,dta_i,j ,P_list, O, death_states,censored_state ,corresponding_censored_states,E_list   ):
-    Q = Q_list[  dta_i['row'].iloc[j]    ]
-    P=P_list[ dta_i['row_p'].iloc[j] ]
+    Q = Q_list[  int(dta_i['row'].iloc[j] )   ]
+    P=P_list[ int(dta_i['row_p'].iloc[j]) ]
 
     no_states = np.shape(Q)[1]
 
