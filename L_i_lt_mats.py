@@ -32,10 +32,9 @@ def L_lt_i_mats(dta_lt_p,dta_p,i,Q_lt_list,P_lt_list,death_states,censored_state
     i_len=len(O)
     
     dta_lt_i['row_E']=0
-    dta_lt_i['row_E'].iloc[i_len-1]  =1
 
-    
-    
+    dta_lt_i.loc[i_len-1, "row_E"] =1
+
     no_states = np.shape(Q_lt_list[0])[1]
     E_lt_list= np.array([np.identity(no_states),emat])
 

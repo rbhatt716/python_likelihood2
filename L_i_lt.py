@@ -21,6 +21,7 @@ def L_i_lt(dta_p,i,Q_list,P_list,death_states,censored_state ,corresponding_cens
     l_i_lt= L_lt_i_mats(dta_lt_p,dta_p,i,Q_lt_list,P_lt_list,death_states,censored_state ,corresponding_censored_states,E_list,lt_states)
     l_i_val = np.matmul(l_i_lt,l_i)
 
+
     dta_lt_i = dta_lt_p[dta_lt_p['id'] == i].reset_index(drop=True)
     O     = dta_lt_i['state']
     
