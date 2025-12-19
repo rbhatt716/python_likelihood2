@@ -46,24 +46,24 @@ def Q_matrix(p,no_qpars,Qm,covariates_name,j,dt,functions,age_like):
     return Q
 
 
-def Q_matrix_torch(p, no_qpars, Qm, covariates_name, j, dt, functions, age_like,dt_q_columns):
+def Q_matrix_torch(p, no_qpars, Qm, covariates_name, j, dt_q,functions,age_like,dt_q_columns):
     indexes = list(range(0, no_qpars, 1))
 
-    all_qpars = np.array([p[ind] for ind in indexes])
+    all_qpars = p[indexes]
 
     if len(covariates_name) > 0:
-        q_pars_mat = torch.tensor(all_qpars.reshape(len(covariates_name) + 1, np.sum(Qm > 0)))
+        q_pars_mat = all_qpars.reshape(len(covariates_name) + 1, torch.sum(Qm > 0)  )
 
 
-        cov_vals =  dt[ j, np.isin(dt_q_columns, covariates_name )]
+        cov_vals =  dt_q[ j, np.isin(dt_q_columns, covariates_name )]
         cov_names = covariates_name
     else:
-        q_pars_mat = torch.tensor(all_qpars.reshape(1, np.sum(Qm > 0)))
+        q_pars_mat = all_qpars.reshape( 1, torch.sum(Qm > 0)  )
         cov_vals = []
         cov_names = []
 
     def calculate_qpars(Qm, functions, q_pars_mat, cov_vals, cov_names, age_like):
-        qpars = [hazards_torch(functions[i], cov_vals, cov_names, age_like, q_pars_mat[:, i]) for i in range(np.sum(Qm > 0))]
+        qpars = [hazards_torch(functions[i], cov_vals, cov_names, age_like, q_pars_mat[:, i]) for i in range(torch.sum(Qm > 0))]
         return qpars
 
     qpars = calculate_qpars(Qm, functions, q_pars_mat, cov_vals, cov_names, age_like)
