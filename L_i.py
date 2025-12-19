@@ -17,6 +17,7 @@ import math
 import os
 from multiprocessing import get_context
 from multiprocessing.shared_memory import SharedMemory
+import torch
 
 # ------------------------------------------------------------------
 # 0) Your functions as-is
@@ -54,6 +55,41 @@ def L_i(dta_p, i, Q_list, P_list, death_states, censored_state,
         li = np.sum(np.matmul(np.diag(e_1), l_i))
 
     li = math.log(li)
+    return li
+
+
+
+
+def L_i_torch(mat_li, use_given_initial_prob,
+        Use_misclass_matrix,initial_prob,initial_state,initial_E,E_list,i):
+
+
+    l_i = mat_li[i]
+    O = initial_state[i]
+
+
+    if use_given_initial_prob == False and Use_misclass_matrix == False:
+        x = int(O) - 1
+        e_1 = torch.zeros(l_i.shape[1],dtype=torch.float64)
+        e_1[x] = 1
+        li = torch.sum(torch.matmul(e_1, l_i))
+
+    elif use_given_initial_prob == True and Use_misclass_matrix == False:
+        x = int(O) - 1
+        e_1 =  torch.zeros(l_i.shape[1],dtype=torch.float64)
+        e_1[x] = initial_prob[x]
+        li = torch.sum(e_1 * l_i[x, :])
+
+    else:
+
+
+        E_0 = E_list[initial_E[i]]
+        E_0 = E_0.to(torch.float64)
+        x = int(O) - 1
+        e_1 = E_0[x, ]
+        li = torch.sum(torch.matmul(torch.diag(e_1), l_i))
+
+    li = torch.log(li)
     return li
 
 
