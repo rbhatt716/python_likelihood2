@@ -17,16 +17,17 @@ functions = ['gompertz','gompertz','gompertz','gompertz','gompertz']
 age_like=[]
 death_states = [4]
 censored_state = [-3,-2,-1]
-corresponding_censored_states = [[1],[2],[3]]
+corresponding_censored_states = [[1,2],[2],[3]]
 lt_states = [1,2]
 lt_cen_state = -3
-constrain = np.array([1,2,3,4,5,6,7,8,9,10 ])
+constrain = torch.tensor([1,2,3,4,5,6,7,8,9,10 ])
 
-Qm = np.array([[0,0,0.1, .1],
+Qm = torch.tensor([[0,0.1,0 ,.1],
       [0,0,.1,.1],
       [0,0,0,.1],
       [0,0,0,0]
                ])
+
 
 covariates_name = ['time']
 j=0
@@ -177,27 +178,207 @@ start=time.time()
 loglikelihood_torch(p0=p0,covariates_name=covariates_name,no_qpars=no_qpars,no_epars=no_epars,constrain=constrain,Qm=Qm,functions=functions,age_like=age_like,E_covariates_name=E_covariates_name,ematrix=ematrix,death_states=death_states,censored_state=censored_state ,corresponding_censored_states=corresponding_censored_states, use_given_initial_prob=use_given_initial_prob,Use_misclass_matrix=Use_misclass_matrix,initial_prob=initial_prob,dt_q=dt_q, qlength=qlength,plength=plength,dt_E=dt_E,e_length=e_length,dt_q_columns=dt_q_columns,dt_E_columns=dt_E_columns,dt_p=dt_p, dt_p_columns=dt_p_columns,dta_p_tensor=dta_p_tensor,dta_p_mats=dta_p_mats,dta_p_mats_columns=dta_p_mats_columns,initial_state=initial_state,initial_E=initial_E )
 end=time.time()
 
-fixed = dict( dt=dt, covariates_name=covariates_name, no_qpars=no_qpars, no_epars=no_epars,
-              constrain=constrain, Qm=Qm, functions=functions, age_like=age_like,
-              E_covariates_name=E_covariates_name, ematrix=ematrix, Left_trunc=Left_trunc,
-              death_states=death_states, censored_state=censored_state,
-              corresponding_censored_states=corresponding_censored_states,
-              lt_states=lt_states, lt_cen_state=lt_cen_state,
-              use_given_initial_prob=use_given_initial_prob,
-              Use_misclass_matrix=Use_misclass_matrix, initial_prob=initial_prob )
+device = "cuda" if torch.cuda.is_available() else "cpu"
+p0 = torch.nn.Parameter(
+    torch.tensor(
+        [-9.83378713, -6.63901027, -5.80790354, -5.41157498, -2.24235194, 0, 0, 0, 0, 0],
+        dtype=torch.float32,
+        device=device
+    )
+)
 
-p0 = np.array([-9.83378713, -6.63901027, -5.80790354, -5.41157498, -2.24235194, 0,0,0,0,0], float)
-bounds = [(-10, 10)] * p0.size  # or clip p0 into (-5,5) if those are the real bounds
 
-objective = partial(objective_top, fixed=fixed)
-start=time.time()
+optimizer = torch.optim.SGD([p0], lr=1e-2, momentum=0.9)
 
-if __name__ == "__main__":
-    try:
-        mp.set_start_method("spawn", force=True)
-    except RuntimeError:
-        pass
-    res = minimize_parallel(fun=objective, x0=p0, bounds=bounds)
-    print(res)
-end=time.time()
+for step in range(1000):
+    optimizer.zero_grad(set_to_none=True)
 
+    # Your function already returns NEGATIVE loglikelihood (a loss)
+    loss = loglikelihood_torch(
+        p0=p0,
+        covariates_name=covariates_name,
+        no_qpars=no_qpars,
+        no_epars=no_epars,
+        constrain=constrain,
+        Qm=Qm,
+        functions=functions,
+        age_like=age_like,
+        E_covariates_name=E_covariates_name,
+        ematrix=ematrix,
+        death_states=death_states,
+        censored_state=censored_state,
+        corresponding_censored_states=corresponding_censored_states,
+        use_given_initial_prob=use_given_initial_prob,
+        Use_misclass_matrix=Use_misclass_matrix,
+        initial_prob=initial_prob,
+        dt_q=dt_q,
+        qlength=qlength,
+        plength=plength,
+        dt_E=dt_E,
+        e_length=e_length,
+        dt_q_columns=dt_q_columns,
+        dt_E_columns=dt_E_columns,
+        dt_p=dt_p,
+        dt_p_columns=dt_p_columns,
+        dta_p_tensor=dta_p_tensor,
+        dta_p_mats=dta_p_mats,
+        dta_p_mats_columns=dta_p_mats_columns,
+        initial_state=initial_state,
+        initial_E=initial_E
+    )
+
+    # Backprop + update
+    loss.backward()
+    optimizer.step()
+
+    if step % 50 == 0:
+        print(step, float(loss.detach().cpu()), p0.detach().cpu().numpy())
+
+
+
+import time
+
+
+def loss_only_p0(p0):
+    # p0 must be torch Tensor
+    return loglikelihood_torch(
+        p0=p0,
+        covariates_name=covariates_name,
+        no_qpars=no_qpars,
+        no_epars=no_epars,
+        constrain=constrain,
+        Qm=Qm,
+        functions=functions,
+        age_like=age_like,
+        E_covariates_name=E_covariates_name,
+        ematrix=ematrix,
+        death_states=death_states,
+        censored_state=censored_state,
+        corresponding_censored_states=corresponding_censored_states,
+        use_given_initial_prob=use_given_initial_prob,
+        Use_misclass_matrix=Use_misclass_matrix,
+        initial_prob=initial_prob,
+        dt_q=dt_q,
+        qlength=qlength,
+        plength=plength,
+        dt_E=dt_E,
+        e_length=e_length,
+        dt_q_columns=dt_q_columns,
+        dt_E_columns=dt_E_columns,
+        dt_p=dt_p,
+        dt_p_columns=dt_p_columns,
+        dta_p_tensor=dta_p_tensor,
+        dta_p_mats=dta_p_mats,
+        dta_p_mats_columns=dta_p_mats_columns,
+        initial_state=initial_state,
+        initial_E=initial_E
+    )
+
+# gradcheck needs double precision
+p0_test = torch.tensor(
+    [-9.83378713, -6.63901027, -5.80790354, -5.41157498, -2.24235194, 0, 0, 0, 0, 0],
+    dtype=torch.float64,
+    requires_grad=True
+)
+
+# Run gradcheck
+ok = torch.autograd.gradcheck(loss_only_p0, (p0_test,), eps=1e-6, atol=1e-4, rtol=1e-3)
+print("gradcheck:", ok)
+
+
+import torch
+
+def fd_one(f, x, i, eps=1e-6):
+    e = torch.zeros_like(x)
+    e[i] = 1.0
+    return (f(x + eps*e) - f(x - eps*e)) / (2*eps)
+
+# autograd gradient
+p = p0_test.clone().detach().requires_grad_(True)
+L = loss_only_p0(p)
+L.backward()
+g_ad = p.grad.detach().clone()
+
+# finite diff gradient at same point
+p_det = p0_test.detach().clone()
+g_fd = fd_one(loss_only_p0, p_det, i=2, eps=1e-6)
+
+print("AD:", float(g_ad[2]), "FD:", float(g_fd))
+
+for eps in [1e-4, 1e-5, 1e-6, 1e-7]:
+    g_fd = fd_one(loss_only_p0, p0_test.detach(), i=2, eps=eps)
+    print("eps", eps, "FD grad", float(g_fd))
+
+
+
+
+ok = torch.autograd.gradcheck(
+    loss_only_p0,
+    (p0_test,),
+    eps=1e-4,      # bigger step
+    atol=1e-3,
+    rtol=1e-2
+)
+print(ok)
+
+p0 = torch.nn.Parameter(
+    torch.tensor(
+        [-9.83378713, -6.63901027, -5.80790354, -5.41157498, -2.24235194, 0, 0, 0, 0, 0],
+        dtype=torch.float32  # or float32
+    )
+)
+
+optimizer = torch.optim.SGD([p0], lr=1e-3, momentum=0.9)
+
+for step in range(100):
+    optimizer.zero_grad(set_to_none=True)
+
+    loss = loglikelihood_torch(
+        p0=p0,
+        covariates_name=covariates_name,
+        no_qpars=no_qpars,
+        no_epars=no_epars,
+        constrain=constrain,
+        Qm=Qm,
+        functions=functions,
+        age_like=age_like,
+        E_covariates_name=E_covariates_name,
+        ematrix=ematrix,
+        death_states=death_states,
+        censored_state=censored_state,
+        corresponding_censored_states=corresponding_censored_states,
+        use_given_initial_prob=use_given_initial_prob,
+        Use_misclass_matrix=Use_misclass_matrix,
+        initial_prob=initial_prob,
+        dt_q=dt_q,
+        qlength=qlength,
+        plength=plength,
+        dt_E=dt_E,
+        e_length=e_length,
+        dt_q_columns=dt_q_columns,
+        dt_E_columns=dt_E_columns,
+        dt_p=dt_p,
+        dt_p_columns=dt_p_columns,
+        dta_p_tensor=dta_p_tensor,
+        dta_p_mats=dta_p_mats,
+        dta_p_mats_columns=dta_p_mats_columns,
+        initial_state=initial_state,
+        initial_E=initial_E
+    )
+    loss.backward()
+
+    torch.nn.utils.clip_grad_norm_([p0], max_norm=10.0)
+    optimizer.step()
+
+    if step % 5 == 0:
+        print(step, float(loss), p0.detach().cpu().numpy())
+
+
+p = p0.detach().clone().requires_grad_(True)
+loss = loss_only_p0(p)
+
+grad = torch.autograd.grad(loss, p, create_graph=True)[0]
+
+H = torch.autograd.functional.hessian(loss_only_p0, p)
+
+H = 0.5 * (H + H.T)
